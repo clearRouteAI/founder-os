@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founder OS - ICAP Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Config Panel */
+        .config-panel {
+            background: #1a1a1a;
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .config-panel.hidden { display: none; }
+        .config-title {
+            color: #00ff41;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .config-input {
+            width: 100%;
+            padding: 12px;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .btn-config {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* KPI Bar */
+        .kpi-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+        .kpi-card.success { border-color: #00ff41; box-shadow: 0 0 20px rgba(0,255,65,0.3); }
+        .kpi-card.danger { border-color: #ff4444; box-shadow: 0 0 20px rgba(255,68,68,0.3); }
+        .kpi-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #00ff41;
+            margin-bottom: 4px;
+        }
+        .kpi-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            background: #1a1a1a;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 24px;
+        }
+        .tab {
+            flex: 1;
+            padding: 14px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(0,255,65,0.4);
+        }
+        
+        /* Content Area */
+        .content {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 32px;
+            min-height: 600px;
+        }
+        
+        .section-title {
+            color: #00ff41;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn-primary {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 13px;
+        }
+        
+        .btn-secondary {
+            padding: 12px 24px;
+            background: transparent;
+            color: #00ff41;
+            border: 2px solid #00ff41;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 13px;
+        }
+        
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th {
+            background: #111;
+            padding: 10px 8px;
+            text-align: left;
+            color: #00ff41;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #333;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        tr:hover { background: #252525; }
+        
+        input, select, textarea {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .alert {
+            background: #2a2a00;
+            border: 2px solid #ffcc00;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            color: #ffcc00;
+            font-size: 14px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .health-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .health-green { background: #003300; color: #00ff41; border: 1px solid #00ff41; }
+        .health-yellow { background: #332200; color: #ffcc00; border: 1px solid #ffcc00; }
+        .health-red { background: #330000; color: #ff4444; border: 1px solid #ff4444; }
+        
+        .hidden { display: none; }
+        .status { padding: 8px 16px; border-radius: 4px; display: inline-block; margin-bottom: 16px; font-size: 13px; font-weight: bold; }
+        .status-ok { background: #003300; color: #00ff41; border: 1px solid #00ff41; }
+        .status-error { background: #330000; color: #ff4444; border: 1px solid #ff4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Config Panel -->
+        <div class="config-panel" id="config-panel">
+            <div class="config-title">⚡ SUPABASE CONFIGURATION</div>
+            <div style="margin-bottom: 8px; color: #888; font-size: 12px;">
+                Get these from: Supabase Dashboard → Settings → API
+            </div>
+            <input type="text" class="config-input" id="supabase-url" placeholder="Supabase URL (https://xxx.supabase.co)">
+            <input type="text" class="config-input" id="supabase-key" placeholder="Supabase Anon Key (eyJ...)">
+            <button class="btn-config" onclick="saveConfig()">CONNECT</button>
+        </div>
+
+        <!-- Status -->
+        <div class="status status-error" id="status">⚠ NOT CONFIGURED</div>
+
+        <!-- KPI Bar -->
+        <div class="kpi-bar">
+            <div class="kpi-card">
+                <div class="kpi-value" id="count">0/20</div>
+                <div class="kpi-label">INTERVIEWS</div>
+            </div>
+            <div class="kpi-card" id="top3-card">
+                <div class="kpi-value" id="top3">0</div>
+                <div class="kpi-label">TOP 3 PRIORITY</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="pipeline">$0K</div>
+                <div class="kpi-label">PIPELINE</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value" id="conversion">0%</div>
+                <div class="kpi-label">CONVERSION</div>
+            </div>
+            <div class="kpi-card" id="leaks-card">
+                <div class="kpi-value" id="leaks">0</div>
+                <div class="kpi-label">⚠ LEAKS</div>
+            </div>
+            <div class="kpi-card" id="patterns-card">
+                <div class="kpi-value" id="patterns">0</div>
+                <div class="kpi-label">🎯 PATTERNS</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('pipeline')">PIPELINE</button>
+            <button class="tab" onclick="showTab('metrics')">METRICS</button>
+            <button class="tab" onclick="showTab('hypotheses')">HYPOTHESES</button>
+            <button class="tab" onclick="showTab('insights')">INSIGHTS</button>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div id="pipeline-content">
+                <div class="section-title">
+                    <span>PIPELINE + DISCOVERY TRACKER</span>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn-secondary" onclick="exportCSV()">EXPORT CSV</button>
+                        <button class="btn-primary" onclick="addLead()">+ ADD LEAD</button>
+                    </div>
+                </div>
+                
+                <div class="alert">
+                    <strong>⚡ JOHN MANN'S RULE:</strong> Don't just validate problems EXIST. Validate they're the MOST IMPORTANT problems. Always ask: "If you could fix ONE thing about AVs, what would it be?"
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NAME</th>
+                                <th>COMPANY</th>
+                                <th>SEGMENT</th>
+                                <th>MAGIC WAND</th>
+                                <th>RANK</th>
+                                <th>STAGE</th>
+                                <th>REVENUE</th>
+                                <th>NEXT ACTION</th>
+                                <th>HEALTH</th>
+                                <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th>
+                                <th>X</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leads-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="metrics-content" class="hidden">
+                <div class="section-title">WEEKLY METRICS</div>
+                <div id="metrics-display"></div>
+            </div>
+
+            <div id="hypotheses-content" class="hidden">
+                <div class="section-title">HYPOTHESIS TRACKER</div>
+                <div id="hypotheses-display"></div>
+            </div>
+
+            <div id="insights-content" class="hidden">
+                <div class="section-title">
+                    <span>CUSTOMER INSIGHTS</span>
+                    <button class="btn-primary" onclick="addInsight()">+ ADD INSIGHT</button>
+                </div>
+                <div id="insights-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let supabase;
+        let leads = [];
+        let insights = [];
+
+        const HYPOTHESES = [
+            { id: 'A', name: 'Emergency Responder Communication Gap', segment: 'Emergency Services' },
+            { id: 'B', name: 'AV→Emergency Services Delays', segment: 'AV Companies' },
+            { id: 'C', name: 'Emergency→AV Company Delays', segment: 'Emergency Services' },
+            { id: 'D', name: 'Current Methods Inadequate', segment: 'Emergency Services' },
+            { id: 'E', name: 'Tier 2/3 Resource Gap', segment: 'AV Companies' },
+            { id: 'F', name: 'Voice Solution Addresses Need', segment: 'Emergency Services' },
+            { id: 'G', name: 'Frequent High-Value Scenarios', segment: 'Emergency Services' }
+        ];
+
+        // Initialize
+        window.onload = function() {
+            const url = localStorage.getItem('supabase_url');
+            const key = localStorage.getItem('supabase_key');
+            if (url && key) {
+                connectSupabase(url, key);
+            }
+        };
+
+        function saveConfig() {
+            const url = document.getElementById('supabase-url').value.trim();
+            const key = document.getElementById('supabase-key').value.trim();
+            
+            if (!url || !key) {
+                alert('Enter both URL and Key');
+                return;
+            }
+            
+            localStorage.setItem('supabase_url', url);
+            localStorage.setItem('supabase_key', key);
+            connectSupabase(url, key);
+        }
+
+        function connectSupabase(url, key) {
+            supabase = window.supabase.createClient(url, key);
+            document.getElementById('config-panel').classList.add('hidden');
+            document.getElementById('status').textContent = '✓ CONNECTED';
+            document.getElementById('status').className = 'status status-ok';
+            loadData();
+        }
+
+        async function loadData() {
+            const { data, error } = await supabase.from('interviews').select('*').order('created_at', { ascending: false });
+            if (error) {
+                console.error('Error:', error);
+                return;
+            }
+            leads = data || [];
+            
+            const { data: insightsData } = await supabase.from('insights').select('*').order('created_at', { ascending: false });
+            insights = insightsData || [];
+            
+            updateUI();
+        }
+
+        function updateUI() {
+            updateKPIs();
+            renderLeads();
+            renderHypotheses();
+            renderInsights();
+        }
+
+        function updateKPIs() {
+            const count = leads.length;
+            const top3 = leads.filter(l => ['1','2','3'].includes(l.emerg_coord_rank)).length;
+            const pipeline = leads.reduce((sum, l) => sum + (parseFloat(l.revenue_potential) || 0), 0);
+            const closed = leads.filter(l => l.stage === 'Closed Won').length;
+            const conversion = count > 0 ? (closed / count * 100).toFixed(1) : 0;
+            const leaks = leads.filter(l => !l.next_action_date || daysSince(l.last_contact_date) > 14).length;
+            
+            document.getElementById('count').textContent = `${count}/20`;
+            document.getElementById('top3').textContent = top3;
+            document.getElementById('pipeline').textContent = `$${(pipeline/1000).toFixed(0)}K`;
+            document.getElementById('conversion').textContent = `${conversion}%`;
+            document.getElementById('leaks').textContent = leaks;
+            
+            document.getElementById('top3-card').className = top3 >= 15 ? 'kpi-card success' : 'kpi-card';
+            document.getElementById('leaks-card').className = leaks > 0 ? 'kpi-card danger' : 'kpi-card';
+        }
+
+        function daysSince(date) {
+            if (!date) return 999;
+            return Math.floor((Date.now() - new Date(date).getTime()) / (1000*60*60*24));
+        }
+
+        function calcHealth(lead) {
+            let score = 100;
+            const days = daysSince(lead.last_contact_date);
+            if (days > 14) score -= 30;
+            else if (days > 7) score -= 15;
+            if (!lead.next_action_date) score -= 20;
+            if (lead.urgency < 3) score -= 10;
+            return Math.max(0, score);
+        }
+
+        function renderLeads() {
+            const tbody = document.getElementById('leads-table');
+            if (leads.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="17" class="empty-state">No leads. Click + ADD LEAD</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = leads.map(lead => {
+                const health = calcHealth(lead);
+                const healthClass = health >= 80 ? 'health-green' : health >= 50 ? 'health-yellow' : 'health-red';
+                
+                return `
+                    <tr>
+                        <td><input value="${lead.name || ''}" onchange="updateLead('${lead.id}', 'name', this.value)" style="min-width: 120px;"></td>
+                        <td><input value="${lead.company || ''}" onchange="updateLead('${lead.id}', 'company', this.value)" style="min-width: 120px;"></td>
+                        <td>
+                            <select onchange="updateLead('${lead.id}', 'segment', this.value)" style="min-width: 150px;">
+                                <option value="Emergency Services" ${lead.segment === 'Emergency Services' ? 'selected' : ''}>Emergency Services</option>
+                                <option value="AV Companies" ${lead.segment === 'AV Companies' ? 'selected' : ''}>AV Companies</option>
+                                <option value="Transportation Authority" ${lead.segment === 'Transportation Authority' ? 'selected' : ''}>Transportation Authority</option>
+                            </select>
+                        </td>
+                        <td><textarea onchange="updateLead('${lead.id}', 'magic_wand', this.value)" style="min-width: 200px; min-height: 50px;">${lead.magic_wand || ''}</textarea></td>
+                        <td>
+                            <select onchange="updateLead('${lead.id}', 'emerg_coord_rank', this.value)">
+                                <option value="">-</option>
+                                <option value="1" ${lead.emerg_coord_rank === '1' ? 'selected' : ''}>1</option>
+                                <option value="2" ${lead.emerg_coord_rank === '2' ? 'selected' : ''}>2</option>
+                                <option value="3" ${lead.emerg_coord_rank === '3' ? 'selected' : ''}>3</option>
+                                <option value="4+" ${lead.emerg_coord_rank === '4+' ? 'selected' : ''}>4+</option>
+                                <option value="Not Mentioned" ${lead.emerg_coord_rank === 'Not Mentioned' ? 'selected' : ''}>Not Mentioned</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select onchange="updateLead('${lead.id}', 'stage', this.value)">
+                                <option value="Discovery" ${lead.stage === 'Discovery' ? 'selected' : ''}>Discovery</option>
+                                <option value="Proposal" ${lead.stage === 'Proposal' ? 'selected' : ''}>Proposal</option>
+                                <option value="Pilot" ${lead.stage === 'Pilot' ? 'selected' : ''}>Pilot</option>
+                                <option value="Closed Won" ${lead.stage === 'Closed Won' ? 'selected' : ''}>Closed Won</option>
+                                <option value="Closed Lost" ${lead.stage === 'Closed Lost' ? 'selected' : ''}>Closed Lost</option>
+                            </select>
+                        </td>
+                        <td><input type="number" value="${lead.revenue_potential || 0}" onchange="updateLead('${lead.id}', 'revenue_potential', this.value)" style="width: 80px;"></td>
+                        <td><input type="date" value="${lead.next_action_date || ''}" onchange="updateLead('${lead.id}', 'next_action_date', this.value)" style="width: 120px;"></td>
+                        <td><span class="health-badge ${healthClass}">${health}</span></td>
+                        ${['A','B','C','D','E','F','G'].map(h => `
+                            <td>
+                                <select onchange="updateScore('${lead.id}', '${h}', this.value)" style="width: 50px;">
+                                    <option value="">-</option>
+                                    <option value="1" ${lead['score_'+h] === 1 ? 'selected' : ''}>✓</option>
+                                    <option value="0.5" ${lead['score_'+h] === 0.5 ? 'selected' : ''}>~</option>
+                                    <option value="0" ${lead['score_'+h] === 0 ? 'selected' : ''}>✗</option>
+                                </select>
+                            </td>
+                        `).join('')}
+                        <td><button onclick="deleteLead('${lead.id}')" style="background: transparent; border: none; color: #ff4444; cursor: pointer; font-size: 18px;">×</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function addLead() {
+            const newLead = {
+                name: '',
+                company: '',
+                segment: 'Emergency Services',
+                magic_wand: '',
+                emerg_coord_rank: '',
+                stage: 'Discovery',
+                urgency: 3,
+                revenue_potential: 0,
+                last_contact_date: new Date().toISOString().split('T')[0],
+                next_action_date: '',
+                score_a: null, score_b: null, score_c: null, score_d: null, score_e: null, score_f: null, score_g: null,
+                created_at: new Date().toISOString()
+            };
+            
+            const { error } = await supabase.from('interviews').insert(newLead);
+            if (error) {
+                alert('Error: ' + error.message);
+                return;
+            }
+            await loadData();
+        }
+
+        async function updateLead(id, field, value) {
+            const { error } = await supabase.from('interviews').update({ [field]: value }).eq('id', id);
+            if (error) console.error('Error:', error);
+            await loadData();
+        }
+
+        async function updateScore(id, hyp, value) {
+            const scoreValue = value === '' ? null : parseFloat(value);
+            const { error } = await supabase.from('interviews').update({ [`score_${hyp.toLowerCase()}`]: scoreValue }).eq('id', id);
+            if (error) console.error('Error:', error);
+            await loadData();
+        }
+
+        async function deleteLead(id) {
+            if (!confirm('Delete this lead?')) return;
+            const { error } = await supabase.from('interviews').delete().eq('id', id);
+            if (error) console.error('Error:', error);
+            await loadData();
+        }
+
+        function renderHypotheses() {
+            const html = HYPOTHESES.map(h => {
+                const applicable = leads.filter(l => l[`score_${h.id.toLowerCase()}`] !== null);
+                const validated = applicable.reduce((sum, l) => sum + (l[`score_${h.id.toLowerCase()}`] || 0), 0);
+                const percent = applicable.length > 0 ? Math.round((validated / applicable.length) * 100) : 0;
+                const isVal = percent >= 75;
+                const isPart = percent >= 50 && percent < 75;
+                
+                return `
+                    <div style="background: #252525; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div>
+                                <span style="font-size: 24px; font-weight: bold; color: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};">H-${h.id}</span>
+                                <span style="margin-left: 12px; font-size: 16px; font-weight: bold;">${h.name}</span>
+                            </div>
+                            <span style="font-size: 32px; font-weight: bold; color: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};">${percent}%</span>
+                        </div>
+                        <div style="font-size: 12px; color: #888; margin-bottom: 12px;">${h.segment}</div>
+                        <div style="background: #1a1a1a; height: 12px; border-radius: 6px; overflow: hidden;">
+                            <div style="height: 100%; width: ${percent}%; background: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};"></div>
+                        </div>
+                        <div style="margin-top: 12px; font-size: 13px; color: #888;">${validated}/${applicable.length} validated</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('hypotheses-display').innerHTML = html;
+        }
+
+        async function addInsight() {
+            const newInsight = {
+                lead_name: '',
+                insight: '',
+                category: '',
+                actionable: false,
+                created_at: new Date().toISOString()
+            };
+            
+            const { error } = await supabase.from('insights').insert(newInsight);
+            if (error) {
+                alert('Error: ' + error.message);
+                return;
+            }
+            await loadData();
+        }
+
+        function renderInsights() {
+            if (insights.length === 0) {
+                document.getElementById('insights-display').innerHTML = '<div class="empty-state">No insights yet</div>';
+                return;
+            }
+            
+            const html = insights.map(i => `
+                <div style="background: #252525; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 16px;">
+                    <input value="${i.lead_name || ''}" onchange="updateInsight('${i.id}', 'lead_name', this.value)" style="width: 100%; margin-bottom: 12px; font-weight: bold;" placeholder="Lead name">
+                    <textarea onchange="updateInsight('${i.id}', 'insight', this.value)" style="width: 100%; min-height: 80px; margin-bottom: 12px;" placeholder="Insight">${i.insight || ''}</textarea>
+                    <input value="${i.category || ''}" onchange="updateInsight('${i.id}', 'category', this.value)" style="width: 100%;" placeholder="Category">
+                </div>
+            `).join('');
+            document.getElementById('insights-display').innerHTML = html;
+        }
+
+        async function updateInsight(id, field, value) {
+            const { error } = await supabase.from('insights').update({ [field]: value }).eq('id', id);
+            if (error) console.error('Error:', error);
+            await loadData();
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('pipeline-content').classList.add('hidden');
+            document.getElementById('metrics-content').classList.add('hidden');
+            document.getElementById('hypotheses-content').classList.add('hidden');
+            document.getElementById('insights-content').classList.add('hidden');
+            
+            document.getElementById(tab + '-content').classList.remove('hidden');
+        }
+
+        function exportCSV() {
+            const csv = [
+                ['Name', 'Company', 'Segment', 'Magic Wand', 'Rank', 'Stage', 'Revenue', 'Next Action', 'Health', 'A', 'B', 'C', 'D', 'E', 'F', 'G'],
+                ...leads.map(l => [
+                    l.name, l.company, l.segment, l.magic_wand, l.emerg_coord_rank, l.stage, l.revenue_potential, l.next_action_date, calcHealth(l),
+                    l.score_a, l.score_b, l.score_c, l.score_d, l.score_e, l.score_f, l.score_g
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `icap-pipeline-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
