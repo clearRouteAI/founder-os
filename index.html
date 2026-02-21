@@ -17,47 +17,6 @@
         
         .container { max-width: 1600px; margin: 0 auto; }
         
-        /* Config Panel */
-        .config-panel {
-            background: #1a1a1a;
-            border: 2px solid #00ff41;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-        .config-panel.hidden { display: none; }
-        .config-title {
-            color: #00ff41;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        .config-input {
-            width: 100%;
-            padding: 12px;
-            background: #0f0f0f;
-            border: 1px solid #333;
-            border-radius: 4px;
-            color: #e0e0e0;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            margin-bottom: 12px;
-        }
-        .btn-config {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
-            color: #000;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
         /* KPI Bar */
         .kpi-bar {
             display: grid;
@@ -240,19 +199,8 @@
 </head>
 <body>
     <div class="container">
-        <!-- Config Panel -->
-        <div class="config-panel" id="config-panel">
-            <div class="config-title">⚡ SUPABASE CONFIGURATION</div>
-            <div style="margin-bottom: 8px; color: #888; font-size: 12px;">
-                Get these from: Supabase Dashboard → Settings → API
-            </div>
-            <input type="text" class="config-input" id="supabase-url" placeholder="Supabase URL (https://xxx.supabase.co)">
-            <input type="text" class="config-input" id="supabase-key" placeholder="Supabase Anon Key (eyJ...)">
-            <button class="btn-config" onclick="saveConfig()">CONNECT</button>
-        </div>
-
         <!-- Status -->
-        <div class="status status-error" id="status">⚠ NOT CONFIGURED</div>
+        <div class="status status-error" id="status">⏳ CONNECTING...</div>
 
         <!-- KPI Bar -->
         <div class="kpi-bar">
@@ -363,31 +311,31 @@
         ];
 
         // Initialize
-        window.onload = function() {
-            const url = localStorage.getItem('supabase_url');
-            const key = localStorage.getItem('supabase_key');
-            if (url && key) {
-                connectSupabase(url, key);
-            }
+        window.onload = async function() {
+            await fetchConfigAndConnect();
         };
 
-        function saveConfig() {
-            const url = document.getElementById('supabase-url').value.trim();
-            const key = document.getElementById('supabase-key').value.trim();
-            
-            if (!url || !key) {
-                alert('Enter both URL and Key');
-                return;
+        async function fetchConfigAndConnect() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                if (!config.url || !config.key) {
+                    document.getElementById('status').textContent = '⚠ SERVER NOT CONFIGURED';
+                    document.getElementById('status').className = 'status status-error';
+                    return;
+                }
+                
+                connectSupabase(config.url, config.key);
+            } catch (error) {
+                console.error('Config fetch error:', error);
+                document.getElementById('status').textContent = '⚠ CONNECTION ERROR';
+                document.getElementById('status').className = 'status status-error';
             }
-            
-            localStorage.setItem('supabase_url', url);
-            localStorage.setItem('supabase_key', key);
-            connectSupabase(url, key);
         }
 
         function connectSupabase(url, key) {
             supabase = window.supabase.createClient(url, key);
-            document.getElementById('config-panel').classList.add('hidden');
             document.getElementById('status').textContent = '✓ CONNECTED';
             document.getElementById('status').className = 'status status-ok';
             loadData();
