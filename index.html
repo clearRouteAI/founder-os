@@ -242,7 +242,7 @@
                         <thead>
                             <tr>
                                 <th>NAME</th><th>COMPANY</th><th>SEGMENT</th><th>MAGIC WAND</th><th>RANK</th><th>STAGE</th><th>REVENUE</th><th>NEXT ACTION</th><th>HEALTH</th>
-                                <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>X</th>
+                                <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th>H7</th><th>X</th>
                             </tr>
                         </thead>
                         <tbody id="leads-table"></tbody>
@@ -280,13 +280,55 @@
         let insights = [];
 
         const HYPOTHESES = [
-            { id: 'A', name: 'Emergency Responder Communication Gap', segment: 'Emergency Services' },
-            { id: 'B', name: 'AV→Emergency Services Delays', segment: 'AV Companies' },
-            { id: 'C', name: 'Emergency→AV Company Delays', segment: 'Emergency Services' },
-            { id: 'D', name: 'Current Methods Inadequate', segment: 'Emergency Services' },
-            { id: 'E', name: 'Tier 2/3 Resource Gap', segment: 'AV Companies' },
-            { id: 'F', name: 'Voice Solution Addresses Need', segment: 'Emergency Services' },
-            { id: 'G', name: 'Frequent High-Value Scenarios', segment: 'Emergency Services' }
+            { 
+                id: '1', 
+                name: 'Emergency Responders Cannot Direct AVs', 
+                statement: '≥75% of responders say they cannot reliably direct an AV (yield/stop/pull over) using current cues during an incident and it occurs ≥1×/month (or more).',
+                segment: 'Emergency Services',
+                threshold: 75
+            },
+            { 
+                id: '2', 
+                name: 'No Known Contact Path', 
+                statement: '≥75% report there is no single known contact path that connects them to the correct AV ops contact in ≤2 minutes during an incident.',
+                segment: 'All Segments',
+                threshold: 75
+            },
+            { 
+                id: '3', 
+                name: 'AV→PSAP Delays', 
+                statement: '≥75% of AV companies report ≥10-minute delays reaching the correct PSAP/agency contact in ≥20% of incidents (routing/ownership confusion).',
+                segment: 'AV Companies',
+                threshold: 75
+            },
+            { 
+                id: '4', 
+                name: 'Physical Access Unsafe', 
+                statement: '≥75% say physical access (doors/windows/interior) is unsafe/non-standard and they prefer a non-contact external interface.',
+                segment: 'Emergency Services',
+                threshold: 75
+            },
+            { 
+                id: '5', 
+                name: 'Work Zone Communication Gap', 
+                statement: '≥60% say work zones/temporary control cause AV issues that would be reduced if DOT/TMC could push machine-readable closures/commands ≥15 minutes ahead.',
+                segment: 'DOT/TMC',
+                threshold: 60
+            },
+            { 
+                id: '6', 
+                name: 'Prefer Shared Standard', 
+                statement: '≥70% prefer adopting a shared standard/module for secure authenticated external commands rather than building/maintaining custom tooling.',
+                segment: 'AV Companies (Tier 2/3)',
+                threshold: 70
+            },
+            { 
+                id: '7', 
+                name: 'Audit Trail Must-Have', 
+                statement: '≥75% rate a verifiable audit trail (who issued command, what vehicle did, when) as ≥4/5 importance or "must-have".',
+                segment: 'All Segments',
+                threshold: 75
+            }
         ];
 
         // Auto-connect on load
@@ -369,9 +411,10 @@
                         <td><input value="${lead.name || ''}" onchange="updateLead('${lead.id}', 'name', this.value)" style="min-width: 120px;"></td>
                         <td><input value="${lead.company || ''}" onchange="updateLead('${lead.id}', 'company', this.value)" style="min-width: 120px;"></td>
                         <td>
-                            <select onchange="updateLead('${lead.id}', 'segment', this.value)" style="min-width: 150px;">
+                            <select onchange="updateLead('${lead.id}', 'segment', this.value)" style="min-width: 180px;">
                                 <option value="Emergency Services" ${lead.segment === 'Emergency Services' ? 'selected' : ''}>Emergency Services</option>
                                 <option value="AV Companies" ${lead.segment === 'AV Companies' ? 'selected' : ''}>AV Companies</option>
+                                <option value="DOT/TMC" ${lead.segment === 'DOT/TMC' ? 'selected' : ''}>DOT/TMC</option>
                                 <option value="Transportation Authority" ${lead.segment === 'Transportation Authority' ? 'selected' : ''}>Transportation Authority</option>
                             </select>
                         </td>
@@ -398,7 +441,7 @@
                         <td><input type="number" value="${lead.revenue_potential || 0}" onchange="updateLead('${lead.id}', 'revenue_potential', this.value)" style="width: 80px;"></td>
                         <td><input type="date" value="${lead.next_action_date || ''}" onchange="updateLead('${lead.id}', 'next_action_date', this.value)" style="width: 120px;"></td>
                         <td><span class="health-badge ${healthClass}">${health}</span></td>
-                        ${['A','B','C','D','E','F','G'].map(h => `
+                        ${['1','2','3','4','5','6','7'].map(h => `
                             <td>
                                 <select onchange="updateScore('${lead.id}', '${h}', this.value)" style="width: 50px;">
                                     <option value="">-</option>
@@ -419,7 +462,7 @@
                 name: '', company: '', segment: 'Emergency Services', magic_wand: '', emerg_coord_rank: '',
                 stage: 'Discovery', urgency: 3, revenue_potential: 0,
                 last_contact_date: new Date().toISOString().split('T')[0], next_action_date: '',
-                score_a: null, score_b: null, score_c: null, score_d: null, score_e: null, score_f: null, score_g: null,
+                score_1: null, score_2: null, score_3: null, score_4: null, score_5: null, score_6: null, score_7: null,
                 created_at: new Date().toISOString()
             };
             const { error } = await supabaseClient.from('interviews').insert(newLead);
@@ -435,7 +478,7 @@
 
         async function updateScore(id, hyp, value) {
             const scoreValue = value === '' ? null : parseFloat(value);
-            const { error } = await supabaseClient.from('interviews').update({ [`score_${hyp.toLowerCase()}`]: scoreValue }).eq('id', id);
+            const { error } = await supabaseClient.from('interviews').update({ [`score_${hyp}`]: scoreValue }).eq('id', id);
             if (error) console.error('Error:', error);
             await loadData();
         }
@@ -449,24 +492,42 @@
 
         function renderHypotheses() {
             const html = HYPOTHESES.map(h => {
-                const applicable = leads.filter(l => l[`score_${h.id.toLowerCase()}`] !== null);
-                const validated = applicable.reduce((sum, l) => sum + (l[`score_${h.id.toLowerCase()}`] || 0), 0);
+                const applicable = leads.filter(l => l[`score_${h.id}`] !== null);
+                const validated = applicable.reduce((sum, l) => sum + (l[`score_${h.id}`] || 0), 0);
                 const percent = applicable.length > 0 ? Math.round((validated / applicable.length) * 100) : 0;
-                const isVal = percent >= 75; const isPart = percent >= 50 && percent < 75;
+                const threshold = h.threshold || 75;
+                const isVal = percent >= threshold;
+                const isPart = percent >= (threshold * 0.67) && percent < threshold; // 67% of threshold
+                
                 return `
-                    <div style="background: #252525; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 16px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <div>
-                                <span style="font-size: 24px; font-weight: bold; color: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};">H-${h.id}</span>
-                                <span style="margin-left: 12px; font-size: 16px; font-weight: bold;">${h.name}</span>
+                    <div style="background: #252525; padding: 24px; border-radius: 8px; border: 1px solid ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#333'}; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span style="font-size: 28px; font-weight: bold; color: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};">H${h.id}</span>
+                                    <span style="font-size: 16px; font-weight: bold; color: #e0e0e0;">${h.name}</span>
+                                </div>
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+                                    ${h.segment} • THRESHOLD: ≥${threshold}%
+                                </div>
+                                <div style="font-size: 13px; color: #999; line-height: 1.6; background: #1a1a1a; padding: 12px; border-radius: 6px; border-left: 3px solid ${isVal ? '#00ff41' : '#333'};">
+                                    ${h.statement}
+                                </div>
                             </div>
-                            <span style="font-size: 32px; font-weight: bold; color: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};">${percent}%</span>
+                            <div style="text-align: right; margin-left: 24px;">
+                                <div style="font-size: 48px; font-weight: bold; color: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};">${percent}%</div>
+                                <div style="font-size: 11px; color: #666; margin-top: 4px;">${validated}/${applicable.length} interviews</div>
+                            </div>
                         </div>
-                        <div style="font-size: 12px; color: #888; margin-bottom: 12px;">${h.segment}</div>
-                        <div style="background: #1a1a1a; height: 12px; border-radius: 6px; overflow: hidden;">
-                            <div style="height: 100%; width: ${percent}%; background: ${isVal ? '#00ff41' : isPart ? '#ffcc00' : '#666'};"></div>
+                        
+                        <div style="background: #1a1a1a; height: 16px; border-radius: 8px; overflow: hidden; position: relative; margin-bottom: 12px;">
+                            <div style="position: absolute; left: ${threshold}%; top: 0; bottom: 0; width: 2px; background: #00ff41; opacity: 0.5;"></div>
+                            <div style="height: 100%; width: ${Math.min(percent, 100)}%; background: ${isVal ? 'linear-gradient(90deg, #00ff41 0%, #00cc33 100%)' : isPart ? 'linear-gradient(90deg, #ffcc00 0%, #ff9900 100%)' : '#444'}; transition: width 0.3s;"></div>
                         </div>
-                        <div style="margin-top: 12px; font-size: 13px; color: #888;">${validated}/${applicable.length} validated</div>
+                        
+                        <div style="display: inline-block; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; ${isVal ? 'background: #003300; color: #00ff41; border: 1px solid #00ff41;' : isPart ? 'background: #332200; color: #ffcc00; border: 1px solid #ffcc00;' : 'background: #1a1a1a; color: #666; border: 1px solid #333;'}">
+                            ${isVal ? '✓ VALIDATED' : isPart ? '⚠ PROMISING' : applicable.length > 0 ? '✗ NEEDS MORE DATA' : 'NO DATA YET'}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -512,10 +573,10 @@
 
         function exportCSV() {
             const csv = [
-                ['Name', 'Company', 'Segment', 'Magic Wand', 'Rank', 'Stage', 'Revenue', 'Next Action', 'Health', 'A', 'B', 'C', 'D', 'E', 'F', 'G'],
+                ['Name', 'Company', 'Segment', 'Magic Wand', 'Rank', 'Stage', 'Revenue', 'Next Action', 'Health', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7'],
                 ...leads.map(l => [
                     l.name, l.company, l.segment, l.magic_wand, l.emerg_coord_rank, l.stage, l.revenue_potential, l.next_action_date, calcHealth(l),
-                    l.score_a, l.score_b, l.score_c, l.score_d, l.score_e, l.score_f, l.score_g
+                    l.score_1, l.score_2, l.score_3, l.score_4, l.score_5, l.score_6, l.score_7
                 ])
             ].map(row => row.join(',')).join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
