@@ -275,7 +275,7 @@
         const SUPABASE_URL = 'https://qpilbfxwpqonhynxewmw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwaWxiZnh3cHFvbmh5bnhld213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDM4NzUsImV4cCI6MjA4NzExOTg3NX0.fZ0KdTzdUorm_rekoSH_ESnbjAKW04BFTVCqzN8rpbg';
 
-        let supabase;
+        let supabaseClient;
         let leads = [];
         let insights = [];
 
@@ -291,14 +291,14 @@
 
         // Auto-connect on load
         window.onload = function() {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             document.getElementById('status').textContent = '✓ CONNECTED';
             document.getElementById('status').className = 'status status-ok';
             loadData();
         };
 
         async function loadData() {
-            const { data, error } = await supabase.from('interviews').select('*').order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('interviews').select('*').order('created_at', { ascending: false });
             if (error) {
                 console.error('Error:', error);
                 document.getElementById('status').textContent = '⚠ DATABASE ERROR - CHECK CONSOLE';
@@ -307,7 +307,7 @@
             }
             leads = data || [];
             
-            const { data: insightsData } = await supabase.from('insights').select('*').order('created_at', { ascending: false });
+            const { data: insightsData } = await supabaseClient.from('insights').select('*').order('created_at', { ascending: false });
             insights = insightsData || [];
             
             updateUI();
@@ -422,27 +422,27 @@
                 score_a: null, score_b: null, score_c: null, score_d: null, score_e: null, score_f: null, score_g: null,
                 created_at: new Date().toISOString()
             };
-            const { error } = await supabase.from('interviews').insert(newLead);
+            const { error } = await supabaseClient.from('interviews').insert(newLead);
             if (error) { alert('Error: ' + error.message); return; }
             await loadData();
         }
 
         async function updateLead(id, field, value) {
-            const { error } = await supabase.from('interviews').update({ [field]: value }).eq('id', id);
+            const { error } = await supabaseClient.from('interviews').update({ [field]: value }).eq('id', id);
             if (error) console.error('Error:', error);
             await loadData();
         }
 
         async function updateScore(id, hyp, value) {
             const scoreValue = value === '' ? null : parseFloat(value);
-            const { error } = await supabase.from('interviews').update({ [`score_${hyp.toLowerCase()}`]: scoreValue }).eq('id', id);
+            const { error } = await supabaseClient.from('interviews').update({ [`score_${hyp.toLowerCase()}`]: scoreValue }).eq('id', id);
             if (error) console.error('Error:', error);
             await loadData();
         }
 
         async function deleteLead(id) {
             if (!confirm('Delete this lead?')) return;
-            const { error } = await supabase.from('interviews').delete().eq('id', id);
+            const { error } = await supabaseClient.from('interviews').delete().eq('id', id);
             if (error) console.error('Error:', error);
             await loadData();
         }
@@ -475,7 +475,7 @@
 
         async function addInsight() {
             const newInsight = { lead_name: '', insight: '', category: '', actionable: false, created_at: new Date().toISOString() };
-            const { error } = await supabase.from('insights').insert(newInsight);
+            const { error } = await supabaseClient.from('insights').insert(newInsight);
             if (error) { alert('Error: ' + error.message); return; }
             await loadData();
         }
@@ -496,7 +496,7 @@
         }
 
         async function updateInsight(id, field, value) {
-            const { error } = await supabase.from('insights').update({ [field]: value }).eq('id', id);
+            const { error } = await supabaseClient.from('insights').update({ [field]: value }).eq('id', id);
             if (error) console.error('Error:', error);
             await loadData();
         }
